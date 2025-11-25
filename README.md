@@ -20,5 +20,5 @@ Mandatory:
 - an BTS7960B motor driver
 
 Optional:
-- Access to a 3D Printer to print a Case of the Hardware and a box which will be the new Compartment
+- Access to a 3D Printer to print a Case of the Hardware and a box which will be the new Compartment you can print https://www.thingiverse.com/thing:7211131
 - LED Strip to light the compartment when it opens
