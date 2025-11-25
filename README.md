@@ -13,12 +13,11 @@ If you want to do everything by yourself you need the following skills:
 Mandatory:
 - the Compartment itself. Just take the old CD Changer out, if you have one
 - an Arduino Mini (or similar if you can adapt the code to your controller)
-- ACS712 sensor to measure if the Motor reached the end position
 - MCP2515 can controller (Azdelivery version recommended)
 - a Fuse
 - DC-DC Converter to get from 12V to 5V
 - a bit of wire etc
-- 2 Relais
+- an BTS7960B motor driver
 
 Optional:
 - Access to a 3D Printer to print a Case of the Hardware and a box which will be the new Compartment
