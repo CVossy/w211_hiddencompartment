@@ -1,56 +1,84 @@
-int PIN_W211_MICRO_OUT = 5;
-int PIN_W211_MICRO_IN = 6;
-int PIN_IBT_RPWM_Output = 3; 
-int PIN_IBT_LPWM_Output = 4; 
-int PIN_INPUT = 7;
+#include <EEPROM.h>
 
-int STATE = 0; // 0 is closed and 1 is open
+const int PIN_LIMIT_SWITCH = 6;
+const int PIN_RPWM = 3;
+const int PIN_LPWM = 4;
+const int PIN_BUTTON = 7;
 
-int max_stopp_time = 8000;
-void setup()
+int STATE = 1; // 1 = closed, 0 = open
+
+const int MAX_TIME = 3000;
+const int INITIAL_DELAY = 800;
+const int END_EXTRA_TIME = 200;
+const int STEP_DELAY = 100;
+
+void setup() 
 {
-  pinMode(PIN_IBT_RPWM_Output, OUTPUT);
-  pinMode(PIN_IBT_LPWM_Output, OUTPUT);
-  pinMode(PIN_W211_MICRO_OUT, OUTPUT);
-  pinMode(PIN_W211_MICRO_IN, INPUT);
-  pinMode(PIN_INPUT, INPUT);
-  digitalWrite(PIN_W211_MICRO_OUT,HIGH);
+  pinMode(PIN_RPWM, OUTPUT);
+  pinMode(PIN_LPWM, OUTPUT);
+  pinMode(PIN_LIMIT_SWITCH, INPUT_PULLUP);
+  pinMode(PIN_BUTTON, INPUT_PULLUP);
+  EEPROM.get(0, STATE);
+  // ensure valid value in case EEPROM contains garbage
+  if (STATE != 0 && STATE != 1)
+    STATE = 1;
 }
- 
-void loop()
+
+void saveState(int s) 
 {
-  int micro_value = digitalRead(PIN_W211_MICRO_IN);
-  int input_value = digitalRead(PIN_INPUT);
-  
-  // if button is pressed, try to move the motor for 8s - if that isnt sufficient, there is some other problem! but we can't let the motor run forever
-  if (input_value == 1 && STATE == 0)
+  int current;
+  EEPROM.get(0, current);
+  if (current != s)
+    EEPROM.put(0, s);
+}
+
+void moveMotor(bool direction) 
+{
+  int stopp = 0;
+
+  // direction: true = closing, false = opening
+  digitalWrite(PIN_RPWM, direction ? HIGH : LOW);
+  digitalWrite(PIN_LPWM, direction ? LOW : HIGH);
+
+  delay(INITIAL_DELAY);  // move out of end position
+  stopp += INITIAL_DELAY;
+
+  while (stopp < MAX_TIME) 
   {
-    int stopp = 0;
-    while(stopp < max_stopp_time)
+    delay(STEP_DELAY);
+    stopp += STEP_DELAY;
+
+    int micro_value = digitalRead(PIN_LIMIT_SWITCH);
+
+    if (micro_value == LOW) 
     {
-      digitalWrite(PIN_IBT_RPWM_Output, 1);
-      digitalWrite(PIN_IBT_LPWM_Output, 0);
-      delay(100);
-      stopp += 100;
-      micro_value = digitalRead(PIN_W211_MICRO_IN);
-      if (micro_value == 1)
-        stopp = max_stopp_time;
-      
+      delay(END_EXTRA_TIME); // push fully into end position
+      break;
     }
   }
-  else if (input_value == 1 && STATE == 1)
-  {
-    int stopp = 0;
-    while(stopp < max_stopp_time)
-    {
-      digitalWrite(PIN_IBT_RPWM_Output, 0);
-      digitalWrite(PIN_IBT_LPWM_Output, 1);
-      delay(100);
-      stopp += 100;
-      micro_value = digitalRead(PIN_W211_MICRO_IN);
-      if (micro_value == 1)
-        stopp = max_stopp_time;
-      
+
+  // stop motor
+  digitalWrite(PIN_RPWM, LOW);
+  digitalWrite(PIN_LPWM, LOW);
+}
+
+void loop() {
+  int button = digitalRead(PIN_BUTTON);
+
+  if (button == HIGH) {
+
+    if (STATE == 0) // open -> close
+    {        
+      moveMotor(true);       // true = closing direction
+      STATE = 1;
     }
+    else // closed -> open
+    {                   
+      moveMotor(false);
+      STATE = 0;
+    }
+    saveState(STATE);
   }
+
+  delay(100);
 }
